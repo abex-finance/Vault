@@ -42,6 +42,11 @@ module vault::admin {
         contract.fee_account
     }
 
+    /// Get points rate
+    public fun get_points_rate(contract: &Contract): u64 {
+        contract.points_rate
+    }
+
     /// Check must be owner
     public fun assert_owner(contract: &Contract, ctx: &mut TxContext) {
         assert!(
@@ -55,7 +60,11 @@ module vault::admin {
     }
 
     /// Set owner address
-    public entry fun set_contract_owner(contract: &mut Contract, new_owner: address, ctx: &mut TxContext) {
+    public entry fun set_contract_owner(
+        contract: &mut Contract,
+        new_owner: address,
+        ctx: &mut TxContext
+    ) {
         assert_owner(contract, ctx);
         contract.owner = new_owner;
     }
@@ -77,7 +86,7 @@ module vault::admin {
         ctx: &mut TxContext
     ) {
         assert_owner(contract, ctx);
-        assert!(points_rate >=0 && points_rate < 10000, EWrongPointsRate);
+        assert!(points_rate >= 0 && points_rate < 10000, EWrongPointsRate);
         contract.points_rate = points_rate;
     }
 
