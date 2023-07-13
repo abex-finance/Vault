@@ -13,7 +13,6 @@ module vault::vault {
 
     const EWrongAmount: u64 = 0;
     const EWrongBalance: u64 = 1;
-    const EWrongAddress: u64 = 2;
 
     // =================== Struct =================
 
@@ -51,6 +50,7 @@ module vault::vault {
 
     struct PayEvent has copy, drop {
         case_id: u64,
+        sender: address,
         white_hat: address,
         amount: u64,
     }
@@ -115,11 +115,9 @@ module vault::vault {
         contract: &Contract,
         ctx: &mut TxContext
     ) {
-        let sender = tx_context::sender(ctx);
         assert_not_freeze(contract);
         assert!(amount > 0, EWrongAmount);
         assert!(balance::value(&case.balance) >= amount, EWrongBalance);
-        assert!(case.white_hat == sender, EWrongAddress);
 
         let fee = 0;
         let points_rate = get_points_rate(contract);
@@ -132,11 +130,12 @@ module vault::vault {
         };
 
         let coin = coin::take(&mut case.balance, amount - fee, ctx);
-        transfer::public_transfer(coin, tx_context::sender(ctx));
+        transfer::public_transfer(coin, case.white_hat);
 
         emit(PayEvent {
             case_id: case.case_id,
-            white_hat: tx_context::sender(ctx),
+            sender: tx_context::sender(ctx),
+            white_hat: case.white_hat,
             amount,
         });
     }
