@@ -1,0 +1,21 @@
+{
+  "name": "vault",
+  "version": "0.0.1",
+  "license": "MIT",
+  "scripts": {
+    "publish": "sui client publish --gas-budget 200000000",
+    "test": "ts-node scripts/test.ts"
+  },
+  "dependencies": {
+    "@mysten/sui.js": "^0.37.1",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.1",
+    "ts-node": "^10.9.1"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.1",
+    "@types/node": "18.15.3",
+    "mocha": "^10.2.0",
+    "typescript": "^4.8.3"
+  }
+}
