@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "license": "MIT",
   "scripts": {
-    "publish": "sui client publish --gas-budget 200000000",
+    "publish": "sui client publish --gas-budget 30000000",
     "test": "ts-node scripts/test.ts"
   },
   "dependencies": {

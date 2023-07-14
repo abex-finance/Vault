@@ -72,13 +72,13 @@ module vault::config {
 
     /// Set admin address
     public entry fun set_contract_admin(
-        admin_cap: &AdminCap,
-        config: Config,
+        admin_cap: AdminCap,
+        config: &Config,
         new_owner: address,
         _ctx: &mut TxContext
     ) {
-        assert_admin(admin_cap, &config);
-        transfer::transfer(config, new_owner);
+        assert_admin(&admin_cap, config);
+        transfer::transfer(admin_cap, new_owner);
     }
 
     /// Set fee account
