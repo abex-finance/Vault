@@ -7,7 +7,7 @@ module vault::vault {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
-    use vault::admin::{assert_not_freeze, assert_owner, Contract, get_fee_account, get_points_rate};
+    use vault::config::{get_fee_account, get_points_rate, AdminCap, Config, assert_admin, assert_not_freeze};
 
     // =================== Error =================
 
@@ -17,18 +17,18 @@ module vault::vault {
     // =================== Struct =================
 
     /// Case
-    struct Case has key, store {
+    struct Case has key {
         id: UID,
         // Case id
         case_id: u64,
-        // White hat
-        white_hat: address,
+        // beneficiary
+        beneficiary: address,
         // Balance
         balance: Balance<SUI>,
     }
 
     /// Case count
-    struct CaseCount has key, store {
+    struct CaseCount has key {
         id: UID,
         // Case count
         count: u64,
@@ -39,7 +39,7 @@ module vault::vault {
     struct AddCaseEvent has copy, drop {
         id: ID,
         case_id: u64,
-        white_hat: address,
+        beneficiary: address,
     }
 
     struct DepositEvent has copy, drop {
@@ -51,13 +51,13 @@ module vault::vault {
     struct PayEvent has copy, drop {
         case_id: u64,
         sender: address,
-        white_hat: address,
+        beneficiary: address,
         amount: u64,
     }
 
     // =================== Function =================
 
-    /// Initial case count
+    /// Initial
     fun init(ctx: &mut TxContext) {
         transfer::share_object(CaseCount {
             id: object::new(ctx),
@@ -67,26 +67,29 @@ module vault::vault {
 
     /// Add case
     public entry fun add_case(
-        contract: &Contract,
-        case_count: &CaseCount,
-        white_hat: address,
+        admin_cap: &AdminCap,
+        config: &Config,
+        case_count: &mut CaseCount,
+        beneficiary: address,
         ctx: &mut TxContext
     ) {
-        assert_owner(contract, ctx);
+        assert_admin(admin_cap, config);
         let count = case_count.count;
         let case_id = count + 1;
         let uid = object::new(ctx);
 
+        case_count.count = case_id;
+
         emit(AddCaseEvent {
             id: uid_to_inner(&uid),
             case_id,
-            white_hat,
+            beneficiary,
         });
 
         transfer::share_object(Case {
             id: uid,
             case_id,
-            white_hat,
+            beneficiary,
             balance: balance::zero(),
         });
     }
@@ -108,34 +111,34 @@ module vault::vault {
         balance::join(&mut case.balance, coin::into_balance(amount));
     }
 
-    /// White hat claim
-    public entry fun pay_to_white_hat(
+    /// Pay to beneficiary
+    public entry fun pay_to_beneficiary(
         case: &mut Case,
+        config: &Config,
         amount: u64,
-        contract: &Contract,
         ctx: &mut TxContext
     ) {
-        assert_not_freeze(contract);
+        // assert_not_freeze(config);
         assert!(amount > 0, EWrongAmount);
         assert!(balance::value(&case.balance) >= amount, EWrongBalance);
 
         let fee = 0;
-        let points_rate = get_points_rate(contract);
+        let points_rate = get_points_rate(config);
         if (points_rate > 0) {
             fee = amount * points_rate / 10000;
         };
         if (fee > 0) {
             let fee_coin = coin::take(&mut case.balance, fee, ctx);
-            transfer::public_transfer(fee_coin, get_fee_account(contract));
+            transfer::public_transfer(fee_coin, get_fee_account(config));
         };
 
         let coin = coin::take(&mut case.balance, amount - fee, ctx);
-        transfer::public_transfer(coin, case.white_hat);
+        transfer::public_transfer(coin, case.beneficiary);
 
         emit(PayEvent {
             case_id: case.case_id,
             sender: tx_context::sender(ctx),
-            white_hat: case.white_hat,
+            beneficiary: case.beneficiary,
             amount,
         });
     }
